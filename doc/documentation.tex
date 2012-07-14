@@ -1,0 +1,194 @@
+\documentclass[
+    draft,
+    fontsize=11pt,
+    DIV=calc
+]{scrartcl}
+
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{lmodern,amsmath,amssymb}
+
+\title{N-body simulator writing in Cython, Python and C++}
+\author{Ignas Anikevičius}
+
+% macros here:
+\newcommand{\vect}[1]{\ensuremath{\mathrm{\mathbf{#1}}}}
+\newcommand{\dd}{\ensuremath{\mathrm{d}}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+
+\section{Introduction}
+
+%
+This document describes the writing and designing of a $N$-body simulator. 
+%
+The main purpose of the study is to find out, which approach takes less time, yields more precise results and is easier to code.
+
+%
+The selection of language can be justified as follows:
+%
+\begin{description}
+        %
+    \item[Python] It is very easy to prototype and it has a wide array of libraries, which can be useful in scientific computing.
+        %
+    \item[Cython] This is a way to speed up code written in Python with additional C definitions, but without limiting yourself to only C or Python.
+        %
+    \item[C/C++] Software written with in these languages will be fast and the coding itself will be very instructive. However, the main drawback is the amount of time it takes to code some trivial expressions.
+        %
+\end{description}
+
+\section{The problem}
+
+The problem is to calculate the motion of particles in infinite space, which interact with each other via gravitational forces only.
+%
+The particles are considered to be material points and no dark matter or dark energy is taken into account.
+%
+Therefore, we need to solve the following set of equations:
+%
+\begin{align}
+    \vect{x_i}^{\prime\prime}\left(t\right)
+    &=
+    \cfrac{\vect{F_i}\left(t\right)}{m_i}
+    =
+    \sum_{i\ne j}^{N}{
+        \cfrac{
+            m_j 
+            \left(
+                \vect{x_j} - \vect{x_i}
+            \right)
+        }{
+            \left|
+                \vect{x_j} - \vect{x_i}
+            \right|^3
+        }
+    }
+    \label{eq:govern}
+\end{align}
+
+From this relation we can predict all the motion of the system if the initial conditions are known.
+%
+Hence, we can clearly state that this is a Neumann problem, however, there are precise analytic solutions only for the case of $N=2$.
+%
+For $N>2$ the solutions need to be approximated, which will be done by writting a computer program.
+
+%
+However, in order to use RK4 or other accurate integration methods, we need to have an equation of a form:
+%
+\begin{align}
+    \cfrac{\dd y}{\dd x} = f\left(x,y\right)
+    \nonumber
+\end{align}
+%
+We can re-express eq. \ref{eq:govern} as a set of 2 first order equations as follows:
+%
+\begin{align}
+    \left\{
+        \begin{aligned}
+            \vect{x_i^\prime} \left( t \right)
+            &=
+            \vect{v} \left( t \right)
+            \\
+            \vect{v_i}^\prime \left( t \right)
+            &=
+            \sum_{i\ne j}^{N}{
+                \cfrac{
+                    m_j 
+                    \left(
+                        \vect{x_j} - \vect{x_i}
+                    \right)
+                }{
+                    \left|
+                        \vect{x_j} - \vect{x_i}
+                    \right|^3
+                }
+            }
+        \end{aligned}
+    \right.
+    \label{eq:govern-set}
+\end{align}
+%
+Also, since these equations are vector equations, we can split each vector equation into several equations for each component.
+%
+Having done that we should have $\mathcal{N}$ equations where:
+%
+\begin{align}
+    \mathcal{N} = 2 \times \text{\# of dimensions} \times \text{\# of particles}
+\end{align}
+
+%
+The above findings will be very useful when using external libraries to solve the system of equations.
+
+\emph{%
+    Note: in all of the equations it was assumed that the numerical value of $G$ is $1$, so I am calculating everything in natural units.
+    This would also mean, that the numerical value of $c$ (speed of light) is equal to $1$ as well
+}
+
+\section{The algorithm of the computer program}
+
+The exact algorithm which will be used here will be the Barnes-Hut algorithm together with 4th Runge-Kutta integration.
+%
+Although using the RK4 method of integration might not be the fastest to get an answer, however, it is the fastest to get a reliable answer.
+
+%
+The whole algorithm can be outlined as follows:
+%
+\begin{enumerate}
+        %
+    \item Divide the whole space spanned by the particles into octants (or quadrants in 2-D case), such that there is only one particle in each segment.
+        %
+    \item Create a tree from all the octants and when done, calculate the interaction forces with all the particles.
+        %
+    \item If some cluster is far away, approximate it as one particle and do not traverse the tree anymore.
+        %
+    \item After having out the net force for the particle, do RK4 integration.
+        %
+\end{enumerate}
+
+\section{Requirements for the program}
+
+The following requirements need to be met in order for the software to be equivalent:
+%
+\begin{itemize}
+    \item Output various physical parameters of the system to different files, which would be all located in one directory and for one particle there would be a separate file.
+        %
+    \item The physical constants are:
+        \begin{itemize}
+            \item Eccentricity $\left( e \right)$;
+            \item Kinetic energy $\left( T \right)$;
+            \item Potential energy $\left( V \right)$;
+            \item Total energy $\left( E \right)$;
+            \item Possition in all coordinates;
+        \end{itemize}
+        %
+    \item The initial conditions can be read from a single file which can be found in the same directory.
+        %
+    \item The source code needs to be documented in a clear and concise way.
+\end{itemize}
+
+\section{Implementation in Python}
+
+In this section I am going to talk more about the implementation in Python and how it should be done.
+%
+
+\section{Implementation in Cython}
+
+\section{Implementation in C/C++}
+
+\section{Wishlist}
+
+This is the things I would like to do with my program:
+\begin{itemize}
+    \item Incorporate general relativity.
+    \item Find out how I can incorporate dark matter and dar energy. For gravitation I need only the dark matter. Is it true?
+    \item Change the algorithm, so that the step change would be adaptive. Check whether it is feasable to do it when there are many particles.
+    \item Can I find the viscosity of the fluid?
+\end{itemize}
+
+\end{document}
+
+% vim: tw=72
