@@ -1,5 +1,7 @@
 #! /bin/bash
 
+DIR="_build bin"
+
 main ()
 {
     # Report the purpose
@@ -13,14 +15,14 @@ Cleaning everything up.
 
 EOF
 
-    rm -r ./b{in,uild}
+    rm -r ${DIR}
 
     cat << EOF
-Preparing ./b{in,uild}.
+Preparing ${DIR}
 
 EOF
 
-    mkdir ./b{in,uild}
+    mkdir ${DIR}
 
     cat << EOF
 Compiling.
@@ -28,7 +30,7 @@ Compiling.
 EOF
 
     # Use cmake
-    cd build
+    cd ${DIR}
     cmake ..
     make
     cd ..
