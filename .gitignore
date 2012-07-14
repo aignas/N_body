@@ -1,0 +1,6 @@
+bin
+_build
+*_aux
+*.aux
+*.synctex.gz
+*.log
