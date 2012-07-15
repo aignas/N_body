@@ -44,10 +44,21 @@ def Net_Force_Stupid(W,t,M):
     for j in xrange(X.shape()[0]):
       if j==i:
         continue
-      # FIXME
       f = f + Force(X[i,:],X[j,:],M[i],M[j])
 
   # Return the net force
+  return f
+
+def ODE(W,t,M):
+  X,V = W
+  Force = Net_Force_Stupid(W,t,M)
+  f = []
+  for i in xrange(x.shape()[0]):
+    f += [
+        V[i,0], F[i,0],
+        V[i,1], F[i,1],
+        V[i,2], F[i,2]
+        ]
   return f
 
 # This for now just randomizes the data in the beginning:
@@ -83,4 +94,3 @@ t = np.linspace(0,stoptime,numpoints)
 
 # Call the ODE solver.
 solution = scp.odeint(Net_Force_Stupid,W,t,atol=abserr,rtol=relerr)
-
